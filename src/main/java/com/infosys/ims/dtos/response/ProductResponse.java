@@ -22,6 +22,7 @@ public class ProductResponse {
     private String unit;
     private Integer reorderLevel;
     private BigDecimal sellingPrice;
+    private BigDecimal purchasePrice;
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

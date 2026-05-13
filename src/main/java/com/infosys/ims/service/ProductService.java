@@ -48,4 +48,6 @@ public interface ProductService {
     List<ProductResponse> getMyLinkedProducts(String supplierEmail);
 
     Product getProductEntity(Long id);
+
+    ProductSupplierResponse updateMyLink(Long productSupplierId, String name, SupplierLinkRequest request);
 }

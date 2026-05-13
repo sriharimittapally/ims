@@ -29,7 +29,7 @@ public class Supplier {
     private String phone;
 
     // Categories this supplier is allowed to supply
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "supplier_categories",
             joinColumns = @JoinColumn(name = "supplier_id"),
@@ -41,7 +41,7 @@ public class Supplier {
     @Column(nullable = false)
     private ApprovalStatus approvalStatus;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "reviewed_by")
     private Users reviewedBy;
 

@@ -14,21 +14,65 @@ public class SupplierMapper {
     private final CategoryMapper categoryMapper;
 
     public SupplierProfileResponse mapToResponse(Supplier supplier) {
-        SupplierProfileResponse response = new SupplierProfileResponse();
+
+        SupplierProfileResponse response =
+                new SupplierProfileResponse();
+
         response.setId(supplier.getId());
-        response.setName(supplier.getUser().getName());
-        response.setEmail(supplier.getUser().getEmail());
-        response.setUserCode(supplier.getUser().getUserCode());
-        response.setCompanyName(supplier.getCompanyName());
-        response.setAddress(supplier.getAddress());
-        response.setGstNumber(supplier.getGstNumber());
-        response.setPhone(supplier.getPhone());
-        // FIX: enum → String
-        response.setApprovalStatus(supplier.getApprovalStatus().name());
-        response.setRejectionReason(supplier.getRejectionReason());
-        response.setCreatedAt(supplier.getCreatedAt());
-        response.setReviewedAt(supplier.getReviewedAt());
+
+        response.setName(
+                supplier.getUser().getName()
+        );
+
+        response.setEmail(
+                supplier.getUser().getEmail()
+        );
+
+        response.setUserCode(
+                supplier.getUser().getUserCode()
+        );
+
+        response.setCompanyName(
+                supplier.getCompanyName()
+        );
+
+        response.setAddress(
+                supplier.getAddress()
+        );
+
+        response.setGstNumber(
+                supplier.getGstNumber()
+        );
+
+        response.setPhone(
+                supplier.getPhone()
+        );
+
+        response.setApprovalStatus(
+                supplier.getApprovalStatus().name()
+        );
+
+        response.setRejectionReason(
+                supplier.getRejectionReason()
+        );
+
+        response.setCreatedAt(
+                supplier.getCreatedAt()
+        );
+
+        response.setReviewedAt(
+                supplier.getReviewedAt()
+        );
+
+        response.setCategories(
+
+                supplier.getCategories()
+                        .stream()
+                        .map(category ->
+                                categoryMapper.mapToResponse(category)
+                        )
+                        .collect(Collectors.toList())
+        );
 
         return response;
-    }
-}
+    }}

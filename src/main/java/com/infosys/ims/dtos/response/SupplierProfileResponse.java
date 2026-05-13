@@ -23,4 +23,5 @@ public class SupplierProfileResponse {
     private String rejectionReason;
     private LocalDateTime createdAt;
     private LocalDateTime reviewedAt;
+    private List<CategoryResponse> categories;
 }

@@ -206,14 +206,14 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List getAllProducts() {
+    public List<ProductResponse> getAllProducts() {
         return productRepository.findAll().stream()
                 .map(p -> productMapper.mapToResponse(p, productSupplierRepository.findByProduct(p)))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List getActiveProducts() {
+    public List<ProductResponse> getActiveProducts() {
         return productRepository.findByStatus(ProductStatus.ACTIVE).stream()
                 .map(p -> productMapper.mapToResponse(p, productSupplierRepository.findByProduct(p)))
                 .collect(Collectors.toList());
@@ -249,7 +249,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List getMyLinkedProducts(String supplierEmail) {
+    public List<ProductResponse> getMyLinkedProducts(String supplierEmail) {
         Supplier supplier = supplierService.getSupplierEntity(supplierEmail);
         return productSupplierRepository.findBySupplier(supplier).stream()
                 .filter(ProductSupplier::getIsActive)
@@ -264,5 +264,19 @@ public class ProductServiceImpl implements ProductService {
     public Product getProductEntity(Long id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
+    }
+
+    @Override
+    @Transactional
+    public ProductSupplierResponse updateMyLink(Long productSupplierId, String supplierEmail, SupplierLinkRequest request) {
+        Supplier supplier = supplierService.getSupplierEntity(supplierEmail);
+        ProductSupplier link = productSupplierRepository.findById(productSupplierId)
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier link not found: " + productSupplierId));
+        if (!link.getSupplier().getId().equals(supplier.getId())) {
+            throw new ForbiddenOperationException("You can only update your own link");
+        }
+        link.setPurchasePrice(request.getPurchasePrice());
+        link.setLeadTimeDays(request.getLeadTimeDays());
+        return productMapper.mapToSupplierResponse(productSupplierRepository.save(link));
     }
 }

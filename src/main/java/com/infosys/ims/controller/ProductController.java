@@ -133,4 +133,16 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.success("Price updated",
                 productService.updateMyPrice(productSupplierId, auth.getName(), purchasePrice)));
     }
+
+
+// ── SUPPLIER — Update my link (price + lead time) ──────────────────────────
+    @PutMapping("/supplier-links/{productSupplierId}")
+    @PreAuthorize("hasRole('SUPPLIER')")
+    public ResponseEntity<ApiResponse<ProductSupplierResponse>> updateMyLink(
+            @PathVariable Long productSupplierId,
+            @RequestBody SupplierLinkRequest request,
+            Authentication auth) {
+        return ResponseEntity.ok(ApiResponse.success("Link updated",
+                productService.updateMyLink(productSupplierId, auth.getName(), request)));
+    }
 }
