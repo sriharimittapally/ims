@@ -323,7 +323,6 @@ public class ReportServiceImpl implements ReportService {
                         po.getId(), po.getPoNumber(), po.getStatus().name(),
                         po.getWarehouse().getName(), po.getTotalAmount(),
                         po.getItems() != null ? po.getItems().size() : 0,
-                        po.getExpectedDelivery(),
                         po.getCreatedAt(), po.getShippedAt(), po.getReceivedAt()
                 )
         ).collect(Collectors.toList());

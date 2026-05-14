@@ -46,44 +46,72 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     // ─────────────────────────────────────────────────────────────────────────
     @Override
     @Transactional
-    public PurchaseOrderResponse createPO(String managerEmail, PurchaseOrderRequest request) {
+    public PurchaseOrderResponse createPO(
+            String managerEmail,
+            PurchaseOrderRequest request
+    ) {
+
         Users manager = getUser(managerEmail);
 
         if (manager.getWarehouse() == null) {
-            throw new BadRequestException("Manager is not assigned to any warehouse");
-        }
-        if (!manager.getWarehouse().getId().equals(request.getWarehouseId())) {
-            throw new ForbiddenOperationException("You can only create POs for your own warehouse");
+
+            throw new BadRequestException(
+                    "Manager is not assigned to any warehouse"
+            );
+
         }
 
-        Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
-                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found: " + request.getWarehouseId()));
+        Warehouse warehouse = manager.getWarehouse();
 
-        Supplier supplier = supplierRepository.findById(request.getSupplierId())
-                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found: " + request.getSupplierId()));
+        Supplier supplier = supplierRepository
+                .findById(request.getSupplierId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Supplier not found: "
+                                        + request.getSupplierId()
+                        )
+                );
 
         if (supplier.getApprovalStatus() != ApprovalStatus.APPROVED) {
-            throw new BadRequestException("Supplier is not approved");
+
+            throw new BadRequestException(
+                    "Supplier is not approved"
+            );
+
         }
 
         PurchaseOrder po = new PurchaseOrder();
-        po.setPoNumber(generatePONumber());
-        po.setSupplier(supplier);
-        po.setWarehouse(warehouse);
-        po.setCreatedBy(manager);
-        po.setNote(request.getNote());
-        po.setExpectedDelivery(request.getExpectedDelivery());
 
-        List<PurchaseOrderItem> items = buildItems(po, request.getItems(), supplier);
+        po.setPoNumber(generatePONumber());
+
+        po.setSupplier(supplier);
+
+        po.setWarehouse(warehouse);
+
+        po.setCreatedBy(manager);
+
+        po.setNote(request.getNote());
+
+        List<PurchaseOrderItem> items =
+                buildItems(
+                        po,
+                        request.getItems(),
+                        supplier
+                );
+
         BigDecimal total = items.stream()
                 .map(PurchaseOrderItem::getLineTotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         po.setTotalAmount(total);
+
         po.setItems(items);
 
-        return purchaseOrderMapper.mapToResponse(purchaseOrderRepository.save(po));
-    }
+        return purchaseOrderMapper.mapToResponse(
+                purchaseOrderRepository.save(po)
+        );
 
+    }
     // ─────────────────────────────────────────────────────────────────────────
     // SYSTEM — AUTO-DRAFT PO ON LOW STOCK
     // ─────────────────────────────────────────────────────────────────────────
@@ -209,6 +237,33 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         return purchaseOrderRepository.findByStatus(status).stream()
                 .map(purchaseOrderMapper::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PurchaseOrderResponse> getMyWarehousePOsByStatus(
+            String email,
+            PurchaseOrderStatus status
+    ) {
+
+        Users staff = getUser(email);
+
+        if (staff.getWarehouse() == null) {
+
+            throw new BadRequestException(
+                    "Staff is not assigned to any warehouse"
+            );
+
+        }
+
+        return purchaseOrderRepository
+                .findByWarehouseAndStatus(
+                        staff.getWarehouse(),
+                        status
+                )
+                .stream()
+                .map(purchaseOrderMapper::mapToResponse)
+                .collect(Collectors.toList());
+
     }
 
     @Override

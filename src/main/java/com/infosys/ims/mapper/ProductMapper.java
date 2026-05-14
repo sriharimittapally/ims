@@ -28,7 +28,6 @@ public class ProductMapper {
         response.setUnit(product.getUnit());
         response.setReorderLevel(product.getReorderLevel());
         response.setSellingPrice(product.getSellingPrice());
-        // FIX: enum → String
         response.setStatus(product.getStatus().name());
         response.setCreatedAt(product.getCreatedAt());
         response.setUpdatedAt(product.getUpdatedAt());

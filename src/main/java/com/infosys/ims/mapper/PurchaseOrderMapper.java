@@ -29,8 +29,6 @@ public class PurchaseOrderMapper {
         response.setNote(po.getNote());
         response.setRejectionReason(po.getRejectionReason());
         response.setCreatedByName(po.getCreatedBy() != null ? po.getCreatedBy().getName() : "SYSTEM");
-        // FIX: LocalDate (matches entity and DTO)
-        response.setExpectedDelivery(po.getExpectedDelivery());
         response.setCreatedAt(po.getCreatedAt());
         response.setSentAt(po.getSentAt());
         response.setAcceptedAt(po.getAcceptedAt());

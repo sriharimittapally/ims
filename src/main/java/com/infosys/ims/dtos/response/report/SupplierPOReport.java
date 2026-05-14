@@ -29,7 +29,6 @@ public class SupplierPOReport {
         private String warehouseName;
         private BigDecimal amount;
         private int itemCount;
-        private LocalDate expectedDelivery;
         private LocalDateTime createdAt;
         private LocalDateTime shippedAt;
         private LocalDateTime receivedAt;

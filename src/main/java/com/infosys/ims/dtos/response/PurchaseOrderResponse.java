@@ -27,11 +27,10 @@ public class PurchaseOrderResponse {
     private String note;
     private String rejectionReason;
     private String createdByName;
-    private LocalDate expectedDelivery;
     private LocalDateTime createdAt;
     private LocalDateTime sentAt;
     private LocalDateTime acceptedAt;
     private LocalDateTime shippedAt;
     private LocalDateTime receivedAt;
-    private List items;
+    private List<PurchaseOrderItemResponse> items;
 }

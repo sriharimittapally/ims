@@ -18,14 +18,10 @@ public class PurchaseOrderRequest {
     @NotNull(message = "Supplier ID is required")
     private Long supplierId;
 
-    @NotNull(message = "Warehouse ID is required")
-    private Long warehouseId;
-
     @Valid
     @NotEmpty(message = "At least one item is required")
-    private List items;
+    private List<PurchaseOrderItemRequest> items;
 
     private String note;
 
-    private LocalDate expectedDelivery;
 }

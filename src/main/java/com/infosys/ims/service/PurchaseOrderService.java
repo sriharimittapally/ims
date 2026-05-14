@@ -29,6 +29,11 @@ public interface PurchaseOrderService {
 
     List<PurchaseOrderResponse> getPOsByStatus(PurchaseOrderStatus status);
 
+    List<PurchaseOrderResponse> getMyWarehousePOsByStatus(
+            String email,
+            PurchaseOrderStatus status
+    );
+
     List<PurchaseOrderResponse> getMyWarehousePOs(String managerEmail);
 
     PurchaseOrderResponse getPOById(Long poId);

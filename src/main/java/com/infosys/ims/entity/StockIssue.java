@@ -23,15 +23,15 @@ public class StockIssue {
     @Column(nullable = false, unique = true)
     private String issueNumber;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "warehouse_id", nullable = false)
     private Warehouse warehouse;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "issued_by", nullable = false)
     private Users issuedBy;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "approved_by")
     private Users approvedBy;
 
@@ -55,8 +55,8 @@ public class StockIssue {
     @OneToMany(
             mappedBy = "stockIssue",
             cascade = CascadeType.ALL,
-            orphanRemoval = true,
-            fetch = FetchType.LAZY
+            orphanRemoval = true
+
     )
     private List<StockIssueItem> items = new ArrayList<>();
 

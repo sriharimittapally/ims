@@ -25,11 +25,11 @@ public class PurchaseOrder {
     @Column(unique = true, nullable = false)
     private String poNumber;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "supplier_id", nullable = false)
     private Supplier supplier;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "warehouse_id", nullable = false)
     private Warehouse warehouse;
 
@@ -40,11 +40,11 @@ public class PurchaseOrder {
     @Column(nullable = false, precision = 14, scale = 2)
     private BigDecimal totalAmount;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "created_by")
     private Users createdBy;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "received_by")
     private Users receivedBy;
 
@@ -52,8 +52,6 @@ public class PurchaseOrder {
 
     private String rejectionReason;
 
-    // FIX: LocalDate (not LocalDateTime) to match DTO
-    private LocalDate expectedDelivery;
 
     private LocalDateTime createdAt;
     private LocalDateTime sentAt;
@@ -65,7 +63,7 @@ public class PurchaseOrder {
             mappedBy = "purchaseOrder",
             cascade = CascadeType.ALL,
             orphanRemoval = true,
-            fetch = FetchType.LAZY
+            fetch = FetchType.EAGER
     )
     private List<PurchaseOrderItem> items = new ArrayList<>();
 
