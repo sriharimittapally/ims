@@ -106,6 +106,20 @@ public class ReportServiceImpl implements ReportService {
 
         List<SupplierPerformanceReport.SupplierRow> rows = suppliers.stream().map(supplier -> {
             long total = purchaseOrderRepository.countBySupplier(supplier);
+            long sent = purchaseOrderRepository.countBySupplierAndStatus(
+                    supplier,
+                    PurchaseOrderStatus.SENT
+            );
+
+            long accepted = purchaseOrderRepository.countBySupplierAndStatus(
+                    supplier,
+                    PurchaseOrderStatus.ACCEPTED
+            );
+
+            long shipped = purchaseOrderRepository.countBySupplierAndStatus(
+                    supplier,
+                    PurchaseOrderStatus.SHIPPED
+            );
             long received = purchaseOrderRepository.countFulfilledBySupplier(supplier.getId());
             long rejected = purchaseOrderRepository.countRejectedBySupplier(supplier.getId());
             long pending = purchaseOrderRepository.countBySupplierAndStatus(supplier, PurchaseOrderStatus.SENT)
@@ -124,7 +138,14 @@ public class ReportServiceImpl implements ReportService {
                     supplier.getId(),
                     supplier.getUser().getName(),
                     supplier.getCompanyName(),
-                    linked, total, received, rejected, pending,
+                    linked,
+                    total,
+                    sent,
+                    accepted,
+                    shipped,
+                    received,
+                    rejected,
+                    pending,
                     Math.round(rate * 10.0) / 10.0,
                     spend
             );
@@ -139,7 +160,7 @@ public class ReportServiceImpl implements ReportService {
         LocalDateTime end = to.plusDays(1).atStartOfDay();
 
         List<StockMovement> movements = stockMovementRepository.findByDateRange(start, end);
-        List<StockTrendReport.TrendDataPoint> points = buildDailyTrend(movements, from, to);
+        List<StockTrendReport.DailyTrend> points = buildDailyTrend(movements, from, to);
 
         long totalIn = movements.stream()
                 .filter(m -> m.getType() == StockMovementType.IN)
@@ -149,9 +170,11 @@ public class ReportServiceImpl implements ReportService {
                 .mapToLong(StockMovement::getQuantity).sum();
 
         return new StockTrendReport(
-                "GLOBAL (All Warehouses)",
-                from + " to " + to,
-                totalIn, totalOut, points
+                from.toString(),
+                to.toString(),
+                totalIn,
+                totalOut,
+                points
         );
     }
 
@@ -359,7 +382,7 @@ public class ReportServiceImpl implements ReportService {
         List<StockMovement> movements = stockMovementRepository
                 .findByWarehouseAndDateRange(warehouse.getId(), start, end);
 
-        List<StockTrendReport.TrendDataPoint> points = buildDailyTrend(movements, from, to);
+        List<StockTrendReport.DailyTrend> points = buildDailyTrend(movements, from, to);
 
         long totalIn  = movements.stream()
                 .filter(m -> m.getType() == StockMovementType.IN)
@@ -376,30 +399,53 @@ public class ReportServiceImpl implements ReportService {
     }
 
     /** Aggregate movements into daily IN/OUT data points */
-    private List<StockTrendReport.TrendDataPoint> buildDailyTrend(
-            List<StockMovement> movements, LocalDate from, LocalDate to) {
+    private List<StockTrendReport.DailyTrend> buildDailyTrend(
+            List<StockMovement> movements,
+            LocalDate from,
+            LocalDate to) {
 
-        // Group by date string
-        Map<String, List<StockMovement>> byDay = movements.stream()
-                .collect(Collectors.groupingBy(m ->
-                        m.getCreatedAt().toLocalDate().format(DAY_FMT)));
+        Map<String, List<StockMovement>> byDay =
+                movements.stream()
+                        .collect(Collectors.groupingBy(m ->
+                                m.getCreatedAt()
+                                        .toLocalDate()
+                                        .format(DAY_FMT)));
 
-        List<StockTrendReport.TrendDataPoint> points = new ArrayList<>();
+        List<StockTrendReport.DailyTrend> points =
+                new ArrayList<>();
+
         LocalDate cursor = from;
+
         while (!cursor.isAfter(to)) {
+
             String day = cursor.format(DAY_FMT);
-            List<StockMovement> dayMoves = byDay.getOrDefault(day, Collections.emptyList());
 
-            long in  = dayMoves.stream()
-                    .filter(m -> m.getType() == StockMovementType.IN)
-                    .mapToLong(StockMovement::getQuantity).sum();
-            long out = dayMoves.stream()
-                    .filter(m -> m.getType() == StockMovementType.OUT)
-                    .mapToLong(StockMovement::getQuantity).sum();
+            List<StockMovement> dayMoves =
+                    byDay.getOrDefault(day, Collections.emptyList());
 
-            points.add(new StockTrendReport.TrendDataPoint(day, in, out, in - out));
+            long stockIn =
+                    dayMoves.stream()
+                            .filter(m -> m.getType() == StockMovementType.IN)
+                            .mapToLong(StockMovement::getQuantity)
+                            .sum();
+
+            long stockOut =
+                    dayMoves.stream()
+                            .filter(m -> m.getType() == StockMovementType.OUT)
+                            .mapToLong(StockMovement::getQuantity)
+                            .sum();
+
+            points.add(
+                    new StockTrendReport.DailyTrend(
+                            day,
+                            stockIn,
+                            stockOut
+                    )
+            );
+
             cursor = cursor.plusDays(1);
         }
+
         return points;
     }
 

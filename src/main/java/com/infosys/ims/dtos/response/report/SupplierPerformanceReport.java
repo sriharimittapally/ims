@@ -21,9 +21,12 @@ public class SupplierPerformanceReport {
         private String companyName;
         private int linkedProducts;
         private long totalPOs;
+        private long sentPOs;
+        private long acceptedPOs;
+        private long shippedPOs;
         private long receivedPOs;
         private long rejectedPOs;
-        private long pendingPOs;       // SENT + ACCEPTED + SHIPPED
+        private long pendingPOs;      // SENT + ACCEPTED + SHIPPED
         private double fulfillmentRate; // receivedPOs / totalPOs * 100
         private BigDecimal totalSpend;
     }

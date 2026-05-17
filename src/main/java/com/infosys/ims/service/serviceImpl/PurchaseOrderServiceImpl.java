@@ -285,16 +285,42 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     // ─────────────────────────────────────────────────────────────────────────
     @Override
     public List<PurchaseOrderResponse> getMyPOs(String supplierEmail) {
+
         Supplier supplier = getSupplier(supplierEmail);
-        return purchaseOrderRepository.findBySupplier(supplier).stream()
+
+        List<PurchaseOrderStatus> visibleStatuses = List.of(
+                PurchaseOrderStatus.SENT,
+                PurchaseOrderStatus.ACCEPTED,
+                PurchaseOrderStatus.SHIPPED,
+                PurchaseOrderStatus.RECEIVED,
+                PurchaseOrderStatus.REJECTED,
+                PurchaseOrderStatus.CANCELLED
+        );
+
+        return purchaseOrderRepository
+                .findBySupplierAndStatusIn(supplier, visibleStatuses)
+                .stream()
                 .map(purchaseOrderMapper::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<PurchaseOrderResponse> getMyPOsByStatus(String supplierEmail, PurchaseOrderStatus status) {
+    public List<PurchaseOrderResponse> getMyPOsByStatus(
+            String supplierEmail,
+            PurchaseOrderStatus status
+    ) {
+
+        if (status == PurchaseOrderStatus.DRAFT) {
+            throw new ForbiddenOperationException(
+                    "Suppliers cannot access draft purchase orders"
+            );
+        }
+
         Supplier supplier = getSupplier(supplierEmail);
-        return purchaseOrderRepository.findBySupplierAndStatus(supplier, status).stream()
+
+        return purchaseOrderRepository
+                .findBySupplierAndStatus(supplier, status)
+                .stream()
                 .map(purchaseOrderMapper::mapToResponse)
                 .collect(Collectors.toList());
     }

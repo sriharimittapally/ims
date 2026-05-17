@@ -55,7 +55,8 @@ public class StockIssue {
     @OneToMany(
             mappedBy = "stockIssue",
             cascade = CascadeType.ALL,
-            orphanRemoval = true
+            orphanRemoval = true,
+            fetch = FetchType.EAGER
 
     )
     private List<StockIssueItem> items = new ArrayList<>();

@@ -51,6 +51,11 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Lo
 
     long countByWarehouse(Warehouse warehouse);
 
+    List<PurchaseOrder> findBySupplierAndStatusIn(
+            Supplier supplier,
+            List<PurchaseOrderStatus> statuses
+    );
+
     // ── Total spend per warehouse ──────────────────────────────────────────
     @Query("""
         SELECT COALESCE(SUM(po.totalAmount), 0)
