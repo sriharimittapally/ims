@@ -60,7 +60,7 @@ public class PurchaseOrderController {
 
     // ── ADMIN — By status ──────────────────────────────────────────────────
     @GetMapping("/status/{status}")
-    @PreAuthorize("hasAnyRole('ADMIN")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<PurchaseOrderResponse>>> getByStatus(@PathVariable PurchaseOrderStatus status) {
         return ResponseEntity.ok(ApiResponse.success("Purchase orders fetched", purchaseOrderService.getPOsByStatus(status)));
     }

@@ -64,6 +64,6 @@ public class StockIssue {
     @PrePersist
     protected void prePersist() {
         if (this.createdAt == null) this.createdAt = LocalDateTime.now();
-        if (this.status == null) this.status = StockIssueStatus.PENDING;
+        if (this.status == null) this.status = StockIssueStatus.DRAFT;  // changed from PENDING
     }
 }

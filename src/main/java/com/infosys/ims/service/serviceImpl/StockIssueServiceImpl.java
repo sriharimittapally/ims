@@ -67,7 +67,7 @@ public class StockIssueServiceImpl implements StockIssueService {
 
         validateStaffOwnsIssue(staff, issue);
 
-        if (issue.getStatus() != StockIssueStatus.PENDING) {
+        if (issue.getStatus() != StockIssueStatus.DRAFT) {
             throw new BadRequestException("Cannot modify a " + issue.getStatus() + " stock issue");
         }
 
@@ -112,7 +112,7 @@ public class StockIssueServiceImpl implements StockIssueService {
 
         validateStaffOwnsIssue(staff, issue);
 
-        if (issue.getStatus() != StockIssueStatus.PENDING) {
+        if (issue.getStatus() != StockIssueStatus.DRAFT) {
             throw new BadRequestException("Cannot modify a " + issue.getStatus() + " stock issue");
         }
 
@@ -139,7 +139,7 @@ public class StockIssueServiceImpl implements StockIssueService {
         validateStaffOwnsIssue(staff, issue);
 
         if (issue.getStatus() == StockIssueStatus.ISSUED || issue.getStatus() == StockIssueStatus.CANCELLED) {
-            throw new BadRequestException("Cannot cancel a " + issue.getStatus() + " stock issue");
+            throw new BadRequestException("Cannot cancel a " + issue.getStatus() + " stock issue.");
         }
 
         issue.setStatus(StockIssueStatus.CANCELLED);
@@ -190,6 +190,26 @@ public class StockIssueServiceImpl implements StockIssueService {
         issue.setRejectionReason(request.getReason());
         issue.setApprovedBy(manager);
         issue.setApprovedAt(LocalDateTime.now());
+        return stockIssueMapper.toResponse(stockIssueRepository.save(issue));
+    }
+
+    @Override
+    @Transactional
+    public StockIssueResponse submitForReview(Long issueId, String staffEmail) {
+        StockIssue issue = getIssueEntity(issueId);
+        Users staff = getUser(staffEmail);
+
+        validateStaffOwnsIssue(staff, issue);
+
+        if (issue.getStatus() != StockIssueStatus.DRAFT) {
+            throw new BadRequestException("Only DRAFT stock issues can be submitted. Current: " + issue.getStatus());
+        }
+
+        if (issue.getItems() == null || issue.getItems().isEmpty()) {
+            throw new BadRequestException("Cannot submit a stock issue with no items. Please add at least one product.");
+        }
+
+        issue.setStatus(StockIssueStatus.PENDING);
         return stockIssueMapper.toResponse(stockIssueRepository.save(issue));
     }
 

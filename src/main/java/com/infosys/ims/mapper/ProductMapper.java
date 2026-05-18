@@ -30,7 +30,6 @@ public class ProductMapper {
         response.setSellingPrice(product.getSellingPrice());
         response.setStatus(product.getStatus().name());
         response.setCreatedAt(product.getCreatedAt());
-        response.setUpdatedAt(product.getUpdatedAt());
 
         if (productSuppliers != null) {
             response.setSuppliers(

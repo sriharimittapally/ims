@@ -71,6 +71,15 @@ public class StockIssueController {
                 stockIssueService.cancelIssue(issueId, auth.getName())));
     }
 
+    // ── STAFF — Submit for manager review (DRAFT → PENDING) ───────────────────
+    @PutMapping("/{issueId}/submit")
+    @PreAuthorize("hasRole('STAFF')")
+    public ResponseEntity<ApiResponse<StockIssueResponse>> submit(
+            @PathVariable Long issueId, Authentication auth) {
+        return ResponseEntity.ok(ApiResponse.success("Stock issue submitted for review",
+                stockIssueService.submitForReview(issueId, auth.getName())));
+    }
+
     // ── STAFF — Execute (issue stock out) ──────────────────────────────────
     @PutMapping("/{issueId}/issue")
     @PreAuthorize("hasRole('STAFF')")

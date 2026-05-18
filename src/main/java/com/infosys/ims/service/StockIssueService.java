@@ -22,6 +22,9 @@ public interface StockIssueService {
     /** Manager rejects the stock issue */
     StockIssueResponse rejectIssue(Long issueId, String managerEmail, StockIssueRejectRequest request);
 
+    /** Staff submits issue to manager */
+    StockIssueResponse submitForReview(Long issueId, String staffEmail);
+
     /** Staff executes approved issue — deducts stock */
     StockIssueResponse issueStock(Long issueId, String staffEmail);
 
