@@ -23,9 +23,9 @@ public class LowStockAlertReport {
         private int reservedQuantity;
         private int availableQuantity;
         private int reorderLevel;
-        private int deficit;              // reorderLevel - availableQuantity
+        private int deficit;
         private boolean hasPreferredSupplier;
         private String preferredSupplierName;
-        private boolean autoDraftExists;  // whether system already drafted a PO
+        private boolean autoDraftExists;
     }
 }
