@@ -1,6 +1,7 @@
 package com.infosys.ims.service.serviceImpl;
 
 import com.infosys.ims.entity.Users;
+import com.infosys.ims.enums.UserStatus;
 import com.infosys.ims.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -32,6 +33,10 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         return new User(
                 user.getEmail(),
                 user.getPassword(),
+                user.getStatus() == UserStatus.ACTIVE,
+                true,
+                true,
+                true,
                 List.of(
                         new SimpleGrantedAuthority(
                                 "ROLE_" + user.getRole().name()

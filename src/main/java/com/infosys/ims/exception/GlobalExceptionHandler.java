@@ -1,9 +1,11 @@
+
 package com.infosys.ims.exception;
 
 import com.infosys.ims.dtos.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -45,6 +47,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse> handleBadCredentials(BadCredentialsException e) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.error("Invalid email or password"));
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<ApiResponse> handleDisabledUser(DisabledException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error("Your account is inactive. Please contact your manager."));
     }
 
     @ExceptionHandler(UsernameNotFoundException.class)

@@ -46,6 +46,15 @@ public class JwtFilter extends OncePerRequestFilter {
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
             if (jwtUtil.validateToken(token, userDetails)) {
+                if (!userDetails.isEnabled()) {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.getWriter().write("""
+                            {"success":false,"message":"Your account is inactive. Please contact your manager.","data":null}
+                            """);
+                    return;
+                }
+
                 String role = jwtUtil.extractRole(token);
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails, null,

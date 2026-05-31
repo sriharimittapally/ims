@@ -26,7 +26,11 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Lo
 
     List<PurchaseOrder> findByWarehouse(Warehouse warehouse);
 
+    List<PurchaseOrder> findByWarehouseOrderByCreatedAtDesc(Warehouse warehouse);
+
     List<PurchaseOrder> findByWarehouseAndStatus(Warehouse warehouse, PurchaseOrderStatus status);
+
+    List<PurchaseOrder> findByWarehouseAndStatusOrderByCreatedAtDesc(Warehouse warehouse, PurchaseOrderStatus status);
 
     List<PurchaseOrder> findBySupplierAndStatus(Supplier supplier, PurchaseOrderStatus status);
 
@@ -38,6 +42,17 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Lo
         AND po.status IN ('DRAFT','SENT','ACCEPTED','SHIPPED')
     """)
     List<PurchaseOrder> findActiveByProduct(@Param("product") Product product);
+
+    @Query("""
+        SELECT po FROM PurchaseOrder po
+        JOIN po.items i
+        WHERE i.product = :product
+        AND po.warehouse = :warehouse
+        AND po.status IN ('DRAFT','SENT','ACCEPTED','SHIPPED')
+    """)
+    List<PurchaseOrder> findActiveByProductAndWarehouse(
+            @Param("product") Product product,
+            @Param("warehouse") Warehouse warehouse);
 
     // ── Counts: global ─────────────────────────────────────────────────────
     long countByStatus(PurchaseOrderStatus status);

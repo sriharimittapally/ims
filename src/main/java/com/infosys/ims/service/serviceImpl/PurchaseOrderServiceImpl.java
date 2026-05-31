@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -82,7 +83,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
 
         PurchaseOrder po = new PurchaseOrder();
 
-        po.setPoNumber(generatePONumber());
+        po.setPoNumber(generateTemporaryPONumber());
 
         po.setSupplier(supplier);
 
@@ -107,9 +108,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
 
         po.setItems(items);
 
-        return purchaseOrderMapper.mapToResponse(
-                purchaseOrderRepository.save(po)
-        );
+        return purchaseOrderMapper.mapToResponse(saveWithFinalPONumber(po));
 
     }
     // ─────────────────────────────────────────────────────────────────────────
@@ -118,8 +117,8 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     @Override
     @Transactional
     public void autoDraftPOIfLowStock(Product product, Warehouse warehouse) {
-        // Do not create duplicate active POs for the same product
-        if (!purchaseOrderRepository.findActiveByProduct(product).isEmpty()) return;
+        // Do not create duplicate active POs for this product in this warehouse.
+        if (!purchaseOrderRepository.findActiveByProductAndWarehouse(product, warehouse).isEmpty()) return;
 
         // Only auto-draft if a preferred supplier exists
         productSupplierRepository.findByProductAndIsPreferredTrue(product).ifPresent(ps -> {
@@ -128,7 +127,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
             int orderQty = product.getReorderLevel() * 2; // order 2× the reorder level
 
             PurchaseOrder po = new PurchaseOrder();
-            po.setPoNumber(generatePONumber());
+            po.setPoNumber(generateTemporaryPONumber());
             po.setSupplier(ps.getSupplier());
             po.setWarehouse(warehouse);
             po.setCreatedBy(null); // SYSTEM
@@ -144,7 +143,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
             po.setTotalAmount(item.getLineTotal());
             po.setItems(List.of(item));
 
-            purchaseOrderRepository.save(po);
+            saveWithFinalPONumber(po);
         });
     }
 
@@ -256,7 +255,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         }
 
         return purchaseOrderRepository
-                .findByWarehouseAndStatus(
+                .findByWarehouseAndStatusOrderByCreatedAtDesc(
                         staff.getWarehouse(),
                         status
                 )
@@ -270,7 +269,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     public List<PurchaseOrderResponse> getMyWarehousePOs(String managerEmail) {
         Users manager = getUser(managerEmail);
         if (manager.getWarehouse() == null) throw new BadRequestException("Manager is not assigned to a warehouse");
-        return purchaseOrderRepository.findByWarehouse(manager.getWarehouse()).stream()
+        return purchaseOrderRepository.findByWarehouseOrderByCreatedAtDesc(manager.getWarehouse()).stream()
                 .map(purchaseOrderMapper::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -414,9 +413,29 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         }
     }
 
-    private String generatePONumber() {
-        long count = purchaseOrderRepository.count() + 1;
-        return "PO-" + String.format("%06d", count);
+    private String generateTemporaryPONumber() {
+        return "PO-TMP-" + UUID.randomUUID();
+    }
+
+    private String generatePONumber(long sequence) {
+        return "PO-" + String.format("%06d", sequence);
+    }
+
+    private PurchaseOrder saveWithFinalPONumber(PurchaseOrder po) {
+        PurchaseOrder saved = purchaseOrderRepository.saveAndFlush(po);
+
+        long sequence = saved.getId();
+        String finalNumber = generatePONumber(sequence);
+
+        while (purchaseOrderRepository.findByPoNumber(finalNumber)
+                .filter(existing -> !existing.getId().equals(saved.getId()))
+                .isPresent()) {
+            sequence++;
+            finalNumber = generatePONumber(sequence);
+        }
+
+        saved.setPoNumber(finalNumber);
+        return purchaseOrderRepository.saveAndFlush(saved);
     }
 
     private List<PurchaseOrderItem> buildItems(PurchaseOrder po, List<PurchaseOrderItemRequest> requests, Supplier supplier) {
