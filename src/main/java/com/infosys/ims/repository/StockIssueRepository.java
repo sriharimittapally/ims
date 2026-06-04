@@ -18,13 +18,19 @@ public interface StockIssueRepository extends JpaRepository<StockIssue, Long> {
     // Used by StockIssueServiceImpl: staff sees only their own issues
     List<StockIssue> findByIssuedBy(Users user);
 
+    List<StockIssue> findByIssuedByOrderByCreatedAtDesc(Users user);
+
     List<StockIssue> findByStatus(StockIssueStatus status);
 
     // Used by StockIssueServiceImpl + DashboardServiceImpl: scoped to warehouse
     List<StockIssue> findByWarehouse(Warehouse warehouse);
 
+    List<StockIssue> findByWarehouseOrderByCreatedAtDesc(Warehouse warehouse);
+
     // Used by StockIssueServiceImpl.getPendingIssuesForWarehouse + DashboardServiceImpl
     List<StockIssue> findByWarehouseAndStatus(Warehouse warehouse, StockIssueStatus status);
+
+    List<StockIssue> findByWarehouseAndStatusOrderByCreatedAtDesc(Warehouse warehouse, StockIssueStatus status);
 
     long count();
 

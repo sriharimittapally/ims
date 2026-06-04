@@ -73,6 +73,7 @@ public class StockIssueServiceImpl implements StockIssueService {
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + productId));
+        Inventory inventory = inventoryService.getOrCreateInventory(product, issue.getWarehouse());
 
         // Check if product already in this issue — update quantity if so
         issue.getItems().stream()
@@ -80,25 +81,27 @@ public class StockIssueServiceImpl implements StockIssueService {
                 .findFirst()
                 .ifPresentOrElse(
                         existing -> {
-                            existing.setQuantityRequested(existing.getQuantityRequested() + quantity);
+                            int updatedQuantity = existing.getQuantityRequested() + quantity;
+                            validateRequestedQuantity(inventory, updatedQuantity);
+                            existing.setQuantityRequested(updatedQuantity);
                             existing.setQuantityIssued(existing.getQuantityRequested());
                             stockIssueItemRepository.save(existing);
                         },
                         () -> {
                             // Validate stock is available in this warehouse
-                            Inventory inventory = inventoryService.getOrCreateInventory(product, issue.getWarehouse());
-                            inventoryService.validateStockAvailability(inventory, quantity);
+                            validateRequestedQuantity(inventory, quantity);
 
                             StockIssueItem item = new StockIssueItem();
                             item.setStockIssue(issue);
                             item.setProduct(product);
                             item.setQuantityRequested(quantity);
                             item.setQuantityIssued(quantity);
-                            stockIssueItemRepository.save(item);
+                            StockIssueItem savedItem = stockIssueItemRepository.save(item);
+                            issue.getItems().add(savedItem);
                         }
                 );
 
-        return stockIssueMapper.toResponse(stockIssueRepository.findById(issueId).get());
+        return stockIssueMapper.toResponse(issue);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -123,8 +126,9 @@ public class StockIssueServiceImpl implements StockIssueService {
             throw new BadRequestException("This item does not belong to the specified stock issue");
         }
 
+        issue.getItems().removeIf(existing -> existing.getId().equals(itemId));
         stockIssueItemRepository.delete(item);
-        return stockIssueMapper.toResponse(stockIssueRepository.findById(issueId).get());
+        return stockIssueMapper.toResponse(issue);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -209,6 +213,11 @@ public class StockIssueServiceImpl implements StockIssueService {
             throw new BadRequestException("Cannot submit a stock issue with no items. Please add at least one product.");
         }
 
+        for (StockIssueItem item : issue.getItems()) {
+            Inventory inventory = inventoryService.getOrCreateInventory(item.getProduct(), issue.getWarehouse());
+            validateRequestedQuantity(inventory, item.getQuantityRequested());
+        }
+
         issue.setStatus(StockIssueStatus.PENDING);
         return stockIssueMapper.toResponse(stockIssueRepository.save(issue));
     }
@@ -263,7 +272,7 @@ public class StockIssueServiceImpl implements StockIssueService {
     @Override
     public List<StockIssueResponse> getIssuesCreatedBy(String staffEmail) {
         Users staff = getUser(staffEmail);
-        return stockIssueRepository.findByIssuedBy(staff).stream()
+        return stockIssueRepository.findByIssuedByOrderByCreatedAtDesc(staff).stream()
                 .map(stockIssueMapper::toResponse)
                 .collect(Collectors.toList());
     }
@@ -272,7 +281,7 @@ public class StockIssueServiceImpl implements StockIssueService {
     public List<StockIssueResponse> getPendingIssuesForWarehouse(String managerEmail) {
         Users manager = getUser(managerEmail);
         if (manager.getWarehouse() == null) throw new BadRequestException("Manager is not assigned to a warehouse");
-        return stockIssueRepository.findByWarehouseAndStatus(manager.getWarehouse(), StockIssueStatus.PENDING).stream()
+        return stockIssueRepository.findByWarehouseAndStatusOrderByCreatedAtDesc(manager.getWarehouse(), StockIssueStatus.PENDING).stream()
                 .map(stockIssueMapper::toResponse)
                 .collect(Collectors.toList());
     }
@@ -281,7 +290,7 @@ public class StockIssueServiceImpl implements StockIssueService {
     public List<StockIssueResponse> getAllIssuesForWarehouse(String managerEmail) {
         Users manager = getUser(managerEmail);
         if (manager.getWarehouse() == null) throw new BadRequestException("Manager is not assigned to a warehouse");
-        return stockIssueRepository.findByWarehouse(manager.getWarehouse()).stream()
+        return stockIssueRepository.findByWarehouseOrderByCreatedAtDesc(manager.getWarehouse()).stream()
                 .map(stockIssueMapper::toResponse)
                 .collect(Collectors.toList());
     }
@@ -314,6 +323,16 @@ public class StockIssueServiceImpl implements StockIssueService {
     private void validateManagerOwnsWarehouse(Users manager, Warehouse warehouse) {
         if (manager.getWarehouse() == null || !manager.getWarehouse().getId().equals(warehouse.getId())) {
             throw new ForbiddenOperationException("This stock issue does not belong to your warehouse");
+        }
+    }
+
+    private void validateRequestedQuantity(Inventory inventory, int requestedQuantity) {
+        int availableQuantity = inventory.getAvailableQuantity();
+        if (requestedQuantity > availableQuantity) {
+            throw new BadRequestException(
+                    "Quantity can't be greater than available stock. Available: " + availableQuantity +
+                            ", Requested: " + requestedQuantity
+            );
         }
     }
 

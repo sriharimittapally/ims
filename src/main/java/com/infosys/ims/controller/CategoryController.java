@@ -65,4 +65,11 @@ public class CategoryController {
         categoryService.activateCategory(id);
         return ResponseEntity.ok(ApiResponse.success("Category activated"));
     }
+
+    @PutMapping("/{id}/deactivate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<String>> deactivate(@PathVariable Long id) {
+        categoryService.deactivateCategory(id);
+        return ResponseEntity.ok(ApiResponse.success("Category deactivated"));
+    }
 }
