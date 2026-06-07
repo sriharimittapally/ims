@@ -43,10 +43,8 @@ public class SupplierServiceImpl implements SupplierService {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateResourceException("Email already registered: " + request.getEmail());
         }
-
         long count = userRepository.countByRole(Role.SUPPLIER) + 1;
         String userCode = "SUP-" + String.format("%04d", count);
-
         Users user = new Users();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
@@ -54,7 +52,6 @@ public class SupplierServiceImpl implements SupplierService {
         user.setPhone(request.getPhone());
         user.setRole(Role.SUPPLIER);
         user.setUserCode(userCode);
-
         userRepository.save(user);
         return userCode;
     }
@@ -63,16 +60,13 @@ public class SupplierServiceImpl implements SupplierService {
     @Transactional
     public String completeProfile(String email, SupplierProfileRequest request) {
         Users user = getUserEntity(email);
-
         if (supplierRepository.existsByUser(user)) {
             throw new DuplicateResourceException("Profile already completed for: " + email);
         }
-
-        List categories = request.getCategoryIds().stream()
+        List<Category> categories = request.getCategoryIds().stream()
                 .map(id -> categoryRepository.findById(id)
                         .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id)))
                 .collect(Collectors.toList());
-
         Supplier supplier = new Supplier();
         supplier.setUser(user);
         supplier.setCompanyName(request.getCompanyName());
@@ -80,7 +74,6 @@ public class SupplierServiceImpl implements SupplierService {
         supplier.setGstNumber(request.getGstNumber());
         supplier.setPhone(request.getPhone());
         supplier.setCategories(categories);
-
         supplierRepository.save(supplier);
         return "Profile completed. Awaiting admin approval.";
     }
@@ -94,14 +87,14 @@ public class SupplierServiceImpl implements SupplierService {
     }
 
     @Override
-    public List getAllSuppliers() {
+    public List<SupplierProfileResponse> getAllSuppliers() {
         return supplierRepository.findAll().stream()
                 .map(supplierMapper::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List getPendingSuppliers() {
+    public List<SupplierProfileResponse> getPendingSuppliers() {
         return supplierRepository.findByApprovalStatus(ApprovalStatus.PENDING).stream()
                 .map(supplierMapper::mapToResponse)
                 .collect(Collectors.toList());
@@ -119,11 +112,9 @@ public class SupplierServiceImpl implements SupplierService {
     public void approveSupplier(Long supplierId, String adminEmail) {
         Supplier supplier = supplierRepository.findById(supplierId)
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier not found: " + supplierId));
-
         if (supplier.getApprovalStatus() != ApprovalStatus.PENDING) {
             throw new BadRequestException("Supplier is not in PENDING status");
         }
-
         Users admin = getUserEntity(adminEmail);
         supplier.setApprovalStatus(ApprovalStatus.APPROVED);
         supplier.setReviewedBy(admin);
@@ -136,16 +127,43 @@ public class SupplierServiceImpl implements SupplierService {
     public void rejectSupplier(Long supplierId, String adminEmail, ApprovalRequest request) {
         Supplier supplier = supplierRepository.findById(supplierId)
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier not found: " + supplierId));
-
         if (supplier.getApprovalStatus() != ApprovalStatus.PENDING) {
             throw new BadRequestException("Supplier is not in PENDING status");
         }
-
         Users admin = getUserEntity(adminEmail);
         supplier.setApprovalStatus(ApprovalStatus.REJECTED);
         supplier.setRejectionReason(request.getReason());
         supplier.setReviewedBy(admin);
         supplier.setReviewedAt(LocalDateTime.now());
+        supplierRepository.save(supplier);
+    }
+
+    @Override
+    @Transactional
+    public void revokeApproval(Long supplierId, String adminEmail) {
+        Supplier supplier = supplierRepository.findById(supplierId)
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found: " + supplierId));
+        if (supplier.getApprovalStatus() != ApprovalStatus.APPROVED) {
+            throw new BadRequestException("Supplier is not in APPROVED status");
+        }
+        supplier.setApprovalStatus(ApprovalStatus.PENDING);
+        supplier.setReviewedBy(null);
+        supplier.setReviewedAt(null);
+        supplierRepository.save(supplier);
+    }
+
+    @Override
+    @Transactional
+    public void revokeRejection(Long supplierId, String adminEmail) {
+        Supplier supplier = supplierRepository.findById(supplierId)
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found: " + supplierId));
+        if (supplier.getApprovalStatus() != ApprovalStatus.REJECTED) {
+            throw new BadRequestException("Supplier is not in REJECTED status");
+        }
+        supplier.setApprovalStatus(ApprovalStatus.PENDING);
+        supplier.setRejectionReason(null);
+        supplier.setReviewedBy(null);
+        supplier.setReviewedAt(null);
         supplierRepository.save(supplier);
     }
 

@@ -26,7 +26,6 @@ public class SupplierController {
     private final SupplierService supplierService;
     private final DashboardService dashboardService;
 
-    // ── PUBLIC — Register ──────────────────────────────────────────────────
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<String>> register(@Valid @RequestBody CreateUserRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -34,7 +33,6 @@ public class SupplierController {
                         supplierService.registerSupplierUser(request)));
     }
 
-    // ── SUPPLIER — Complete profile ────────────────────────────────────────
     @PostMapping("/profile")
     @PreAuthorize("hasRole('SUPPLIER')")
     public ResponseEntity<ApiResponse<String>> completeProfile(Authentication auth,
@@ -43,7 +41,6 @@ public class SupplierController {
                 supplierService.completeProfile(auth.getName(), request)));
     }
 
-    // ── SUPPLIER — View own profile ────────────────────────────────────────
     @GetMapping("/profile")
     @PreAuthorize("hasRole('SUPPLIER')")
     public ResponseEntity<ApiResponse<SupplierProfileResponse>> getMyProfile(Authentication auth) {
@@ -51,7 +48,6 @@ public class SupplierController {
                 supplierService.getProfile(auth.getName())));
     }
 
-    // ── SUPPLIER — Dashboard ───────────────────────────────────────────────
     @GetMapping("/dashboard")
     @PreAuthorize("hasRole('SUPPLIER')")
     public ResponseEntity<ApiResponse<SupplierDashboardResponse>> getDashboard(Authentication auth) {
@@ -59,28 +55,24 @@ public class SupplierController {
                 dashboardService.getSupplierDashboard(auth.getName())));
     }
 
-    // ── ADMIN/MANAGER — Get all suppliers ─────────────────────────────────
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ResponseEntity<ApiResponse<List<SupplierProfileResponse>>> getAll() {
         return ResponseEntity.ok(ApiResponse.success("Suppliers fetched", supplierService.getAllSuppliers()));
     }
 
-    // ── ADMIN — Pending approvals ──────────────────────────────────────────
     @GetMapping("/pending")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<SupplierProfileResponse>>> getPending() {
         return ResponseEntity.ok(ApiResponse.success("Pending suppliers fetched", supplierService.getPendingSuppliers()));
     }
 
-    // ── ADMIN/MANAGER — Get by ID ──────────────────────────────────────────
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ResponseEntity<ApiResponse<SupplierProfileResponse>> getById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success("Supplier fetched", supplierService.getSupplierById(id)));
     }
 
-    // ── ADMIN — Approve ────────────────────────────────────────────────────
     @PutMapping("/{id}/approve")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<String>> approve(@PathVariable Long id, Authentication auth) {
@@ -88,7 +80,6 @@ public class SupplierController {
         return ResponseEntity.ok(ApiResponse.success("Supplier approved"));
     }
 
-    // ── ADMIN — Reject ─────────────────────────────────────────────────────
     @PutMapping("/{id}/reject")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<String>> reject(@PathVariable Long id,
@@ -96,5 +87,21 @@ public class SupplierController {
                                                       @Valid @RequestBody ApprovalRequest request) {
         supplierService.rejectSupplier(id, auth.getName(), request);
         return ResponseEntity.ok(ApiResponse.success("Supplier rejected"));
+    }
+
+    // NEW — Revoke Approval (APPROVED → PENDING)
+    @PutMapping("/{id}/revoke-approval")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<String>> revokeApproval(@PathVariable Long id, Authentication auth) {
+        supplierService.revokeApproval(id, auth.getName());
+        return ResponseEntity.ok(ApiResponse.success("Supplier approval revoked. Status reset to PENDING."));
+    }
+
+    // NEW — Revoke Rejection (REJECTED → PENDING)
+    @PutMapping("/{id}/revoke-rejection")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<String>> revokeRejection(@PathVariable Long id, Authentication auth) {
+        supplierService.revokeRejection(id, auth.getName());
+        return ResponseEntity.ok(ApiResponse.success("Supplier rejection revoked. Status reset to PENDING."));
     }
 }
