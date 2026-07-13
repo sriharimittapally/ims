@@ -1,6 +1,7 @@
 package com.infosys.ims.service;
 
 import com.infosys.ims.dtos.request.CreateUserRequest;
+import com.infosys.ims.dtos.response.PageResponse;
 import com.infosys.ims.dtos.response.UserResponse;
 import com.infosys.ims.entity.Users;
 import com.infosys.ims.enums.Role;
@@ -30,6 +31,19 @@ public interface UserService {
      List<UserResponse> getUsersByRole(Role role);
 
      List<UserResponse> getStaffForMyWarehouse(String managerEmail);
+     PageResponse<UserResponse> getUsersByRolePaged(
+             Role role,
+             int page,
+             int size,
+             String search,
+             String status);
+
+     PageResponse<UserResponse> getStaffForMyWarehousePaged(
+             String managerEmail,
+             int page,
+             int size,
+             String search,
+             String status);
 
      Users getUserEntity(String email);
 

@@ -1,6 +1,7 @@
 package com.infosys.ims.service.serviceImpl;
 
 import com.infosys.ims.dtos.request.CreateUserRequest;
+import com.infosys.ims.dtos.response.PageResponse;
 import com.infosys.ims.dtos.response.UserResponse;
 import com.infosys.ims.entity.Users;
 import com.infosys.ims.entity.Warehouse;
@@ -15,6 +16,9 @@ import com.infosys.ims.repository.UserRepository;
 import com.infosys.ims.repository.WarehouseRepository;
 import com.infosys.ims.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -166,6 +170,46 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public PageResponse<UserResponse> getUsersByRolePaged(
+            Role role,
+            int page,
+            int size,
+            String search,
+            String status) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 5), 50);
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+        UserStatus parsedStatus = parseUserStatus(status);
+        Page<UserResponse> result = userRepository
+                .searchByRole(role, parsedStatus, normalizeSearch(search), pageable)
+                .map(userMapper::mapToResponse);
+
+        return PageResponse.from(result);
+    }
+    @Override
+    public PageResponse<UserResponse> getStaffForMyWarehousePaged(
+            String managerEmail,
+            int page,
+            int size,
+            String search,
+            String status) {
+        Users manager = getUserEntity(managerEmail);
+        if (manager.getWarehouse() == null) {
+            throw new BadRequestException("Manager is not assigned to any warehouse");
+        }
+
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 5), 50);
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+        UserStatus parsedStatus = parseUserStatus(status);
+        Page<UserResponse> result = userRepository
+                .searchByWarehouseAndRole(manager.getWarehouse(), Role.STAFF, parsedStatus, normalizeSearch(search), pageable)
+                .map(userMapper::mapToResponse);
+
+        return PageResponse.from(result);
+    }
+
+    @Override
     public Users getUserEntity(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
@@ -175,6 +219,21 @@ public class UserServiceImpl implements UserService {
     public Users getUserEntityById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + id));
+    }
+
+    private String normalizeSearch(String search) {
+        return search == null ? "" : search.trim();
+    }
+
+    private UserStatus parseUserStatus(String status) {
+        if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status)) {
+            return null;
+        }
+        try {
+            return UserStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Unsupported user status: " + status);
+        }
     }
 
     // ---- Helper ----

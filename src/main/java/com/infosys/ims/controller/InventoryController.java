@@ -2,6 +2,7 @@ package com.infosys.ims.controller;
 
 import com.infosys.ims.dtos.response.ApiResponse;
 import com.infosys.ims.dtos.response.InventoryResponse;
+import com.infosys.ims.dtos.response.PageResponse;
 import com.infosys.ims.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +20,7 @@ public class InventoryController {
     private final InventoryService inventoryService;
 
     // =========================================================================
-    // ADMIN — global inventory, all warehouses
+    // ADMIN â€” global inventory, all warehouses
     // =========================================================================
 
     @GetMapping
@@ -41,12 +42,12 @@ public class InventoryController {
     }
 
     // =========================================================================
-    // MANAGER — his warehouse only
+    // MANAGER â€” his warehouse only
     // =========================================================================
 
     /**
      * Manager views inventory for HIS warehouse only.
-     * The service resolves warehouse from the manager's email — no warehouse ID param
+     * The service resolves warehouse from the manager's email â€” no warehouse ID param
      * means the manager cannot query another warehouse.
      */
     @GetMapping("/my-warehouse")
@@ -58,9 +59,22 @@ public class InventoryController {
                 inventoryService.getMyWarehouseInventory(auth.getName())));
     }
 
+    @GetMapping("/my-warehouse/page")
+    @PreAuthorize("hasAnyRole('MANAGER','STAFF')")
+    public ResponseEntity<ApiResponse<PageResponse<InventoryResponse>>> getMyWarehouseInventoryPage(
+            Authentication auth,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "false") boolean lowStockOnly) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Warehouse inventory page fetched",
+                inventoryService.getMyWarehouseInventoryPaged(auth.getName(), page, size, search, lowStockOnly)));
+    }
+
     /**
      * Single product in the caller's warehouse.
-     * Both manager and staff can query this — both are bound to their own warehouse.
+     * Both manager and staff can query this â€” both are bound to their own warehouse.
      */
     @GetMapping("/my-warehouse/product/{productId}")
     @PreAuthorize("hasAnyRole('MANAGER','STAFF')")
@@ -74,7 +88,7 @@ public class InventoryController {
     /**
      * Low stock items for the manager's warehouse ONLY.
      * Manager NEVER sees low-stock from other warehouses through this endpoint.
-     * STAFF cannot call this — they do not need low-stock visibility.
+     * STAFF cannot call this â€” they do not need low-stock visibility.
      */
     @GetMapping("/my-warehouse/low-stock")
     @PreAuthorize("hasRole('MANAGER')")

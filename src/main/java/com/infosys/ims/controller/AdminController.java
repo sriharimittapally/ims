@@ -24,27 +24,27 @@ public class AdminController {
     private final UserService userService;
     private final DashboardService dashboardService;
 
-    // ── Dashboard ──────────────────────────────────────────────────────────
+    // â”€â”€ Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     @GetMapping("/dashboard")
     public ResponseEntity<ApiResponse<AdminDashboardResponse>> getDashboard() {
         return ResponseEntity.ok(ApiResponse.success("Dashboard fetched", dashboardService.getAdminDashboard()));
     }
 
-    // ── Create Manager ─────────────────────────────────────────────────────
+    // â”€â”€ Create Manager â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     @PostMapping("/users/manager")
     public ResponseEntity<ApiResponse<String>> createManager(@Valid @RequestBody CreateUserRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Manager created successfully", userService.createManager(request)));
     }
 
-    // ── Create Staff directly (admin shortcut) ─────────────────────────────
+    // â”€â”€ Create Staff directly (admin shortcut) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     @PostMapping("/users/staff")
     public ResponseEntity<ApiResponse<String>> createStaff(@Valid @RequestBody CreateUserRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Staff created successfully", userService.createStaff(request)));
     }
 
-    // ── Assign manager to a (different) warehouse ──────────────────────────
+    // â”€â”€ Assign manager to a (different) warehouse â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     @PutMapping("/warehouses/{warehouseId}/assign-manager/{managerId}")
     public ResponseEntity<ApiResponse<String>> assignManager(@PathVariable Long warehouseId,
                                                              @PathVariable Long managerId) {
@@ -52,19 +52,30 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("Manager assigned to warehouse"));
     }
 
-    // ── List all users ─────────────────────────────────────────────────────
+    // â”€â”€ List all users â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     @GetMapping("/users")
     public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
         return ResponseEntity.ok(ApiResponse.success("Users fetched", userService.getAllUsers()));
     }
 
-    // ── List by role ───────────────────────────────────────────────────────
+    // â”€â”€ List by role â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     @GetMapping("/users/role/{role}")
     public ResponseEntity<ApiResponse<List<UserResponse>>> getUsersByRole(@PathVariable Role role) {
         return ResponseEntity.ok(ApiResponse.success("Users fetched", userService.getUsersByRole(role)));
     }
 
-    // ── Activate / Deactivate user ─────────────────────────────────────────
+    // â”€â”€ Activate / Deactivate user â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    @GetMapping("/users/role/{role}/page")
+    public ResponseEntity<ApiResponse<PageResponse<UserResponse>>> getUsersByRolePage(
+            @PathVariable Role role,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "ALL") String status) {
+        return ResponseEntity.ok(ApiResponse.success("Users page fetched",
+                userService.getUsersByRolePaged(role, page, size, search, status)));
+    }
     @PutMapping("/users/{id}/activate")
     public ResponseEntity<ApiResponse<String>> activateUser(@PathVariable Long id) {
         userService.activateUser(id);

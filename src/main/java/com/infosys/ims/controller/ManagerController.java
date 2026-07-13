@@ -3,6 +3,7 @@ package com.infosys.ims.controller;
 import com.infosys.ims.dtos.request.CreateUserRequest;
 import com.infosys.ims.dtos.response.ApiResponse;
 import com.infosys.ims.dtos.response.ManagerDashboardResponse;
+import com.infosys.ims.dtos.response.PageResponse;
 import com.infosys.ims.dtos.response.UserResponse;
 import com.infosys.ims.service.DashboardService;
 import com.infosys.ims.service.UserService;
@@ -25,14 +26,14 @@ public class ManagerController {
     private final UserService userService;
     private final DashboardService dashboardService;
 
-    // ── Dashboard ──────────────────────────────────────────────────────────
+    // â”€â”€ Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     @GetMapping("/dashboard")
     public ResponseEntity<ApiResponse<ManagerDashboardResponse>> getDashboard(Authentication auth) {
         return ResponseEntity.ok(ApiResponse.success("Dashboard fetched",
                 dashboardService.getManagerDashboard(auth.getName())));
     }
 
-    // ── Create staff for this warehouse ───────────────────────────────────
+    // â”€â”€ Create staff for this warehouse â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     @PostMapping("/staff")
     public ResponseEntity<ApiResponse<String>> createStaff(Authentication auth,
                                                            @Valid @RequestBody CreateUserRequest request) {
@@ -41,14 +42,25 @@ public class ManagerController {
                         userService.createStaffByManager(request, auth.getName())));
     }
 
-    // ── List staff in my warehouse ─────────────────────────────────────────
+    // â”€â”€ List staff in my warehouse â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     @GetMapping("/staff")
     public ResponseEntity<ApiResponse<List<UserResponse>>> getMyStaff(Authentication auth) {
         return ResponseEntity.ok(ApiResponse.success("Staff fetched",
                 userService.getStaffForMyWarehouse(auth.getName())));
     }
 
-    // ── Activate / Deactivate staff ────────────────────────────────────────
+    @GetMapping("/staff/page")
+    public ResponseEntity<ApiResponse<PageResponse<UserResponse>>> getMyStaffPage(
+            Authentication auth,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "ALL") String status) {
+        return ResponseEntity.ok(ApiResponse.success("Staff page fetched",
+                userService.getStaffForMyWarehousePaged(auth.getName(), page, size, search, status)));
+    }
+
+    // â”€â”€ Activate / Deactivate staff â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     @PutMapping("/staff/{id}/activate")
     public ResponseEntity<ApiResponse<String>> activateStaff(@PathVariable Long id) {
         userService.activateUser(id);

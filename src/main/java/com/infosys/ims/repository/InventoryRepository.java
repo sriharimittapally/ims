@@ -3,6 +3,8 @@ package com.infosys.ims.repository;
 import com.infosys.ims.entity.Inventory;
 import com.infosys.ims.entity.Product;
 import com.infosys.ims.entity.Warehouse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,10 +21,28 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 
     List<Inventory> findByWarehouse(Warehouse warehouse);
 
+    @Query("""
+        SELECT i FROM Inventory i
+        WHERE i.warehouse = :warehouse
+        AND (:lowStockOnly = false OR (i.quantity - i.reservedQuantity) <= i.product.reorderLevel)
+        AND (
+            :search IS NULL OR :search = '' OR
+            LOWER(i.product.productName) LIKE LOWER(CONCAT('%', :search, '%')) OR
+            LOWER(i.product.sku) LIKE LOWER(CONCAT('%', :search, '%')) OR
+            LOWER(i.product.category.name) LIKE LOWER(CONCAT('%', :search, '%'))
+        )
+        ORDER BY i.product.productName ASC
+    """)
+    Page<Inventory> searchByWarehouse(
+            @Param("warehouse") Warehouse warehouse,
+            @Param("search") String search,
+            @Param("lowStockOnly") boolean lowStockOnly,
+            Pageable pageable);
+
     List<Inventory> findByProduct(Product product);
 
-    // ── GLOBAL (Admin only) ───────────────────────────────────────────────
-    // FIX: Never use @Transient fields in JPQL — use the raw DB columns
+    // Ã¢â€â‚¬Ã¢â€â‚¬ GLOBAL (Admin only) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // FIX: Never use @Transient fields in JPQL Ã¢â‚¬â€ use the raw DB columns
     @Query("""
         SELECT i FROM Inventory i
         WHERE (i.quantity - i.reservedQuantity) <= i.product.reorderLevel
@@ -47,7 +67,7 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
     long countLowStockProductsGlobal();
 
 
-    // ── WAREHOUSE-SCOPED (Manager / Staff) ────────────────────────────────
+    // Ã¢â€â‚¬Ã¢â€â‚¬ WAREHOUSE-SCOPED (Manager / Staff) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     @Query("""
         SELECT i FROM Inventory i
         WHERE i.warehouse.id = :warehouseId
@@ -105,3 +125,4 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
        """)
     long countOutOfStockProductsGlobal();
 }
+
